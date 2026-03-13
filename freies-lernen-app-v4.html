@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freies Lernen Planer</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0a0b0f;--surface:#12141a;--card:#181b24;--border:#23263a;--border2:#2e3248;
+    --text:#e2e4f0;--muted:#6b6f88;--accent:#7c6af5;--accent-g:#5de8a8;
+    --done:#1a3a2a;--done-b:#2d6647;--red:#f5605a;
+    --c0:#7c6af5;--c1:#5de8a8;--c2:#f5605a;--c3:#f5c842;--c4:#4ab8f5;
+    --c5:#f57ac8;--c6:#a8f55d;--c7:#f5944a;--c8:#5af5e8;--c9:#c87cf5;
+    --c10:#f5d45a;--c11:#5af58a;--c12:#f5826a;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden}
+
+  /* ══ SCREENS ══ */
+  .screen{display:none;min-height:100vh}
+  .screen.active{display:flex}
+
+  /* ══ LOGIN / REGISTER SCREEN ══ */
+  #loginScreen{align-items:center;justify-content:center;padding:24px;flex-direction:column;gap:16px}
+  .auth-box{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:38px 34px;width:100%;max-width:400px}
+  .auth-logo{font-size:1.5rem;font-weight:800;color:#fff;letter-spacing:-0.03em;margin-bottom:4px}
+  .auth-logo span{color:var(--accent)}
+  .auth-sub{font-size:0.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:28px}
+  .auth-tabs{display:flex;gap:0;margin-bottom:24px;background:var(--card);border-radius:9px;padding:3px}
+  .auth-tab{flex:1;padding:8px;border:none;background:none;color:var(--muted);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;border-radius:7px;transition:all .15s}
+  .auth-tab.active{background:var(--accent);color:#fff}
+  .auth-form{display:flex;flex-direction:column;gap:10px}
+  .auth-form input{
+    background:var(--card);border:1px solid var(--border);border-radius:9px;
+    color:var(--text);padding:11px 15px;font-family:'Syne',sans-serif;font-size:0.9rem;
+    outline:none;transition:border-color .15s;
+  }
+  .auth-form input:focus{border-color:var(--accent)}
+  .auth-form input::placeholder{color:var(--muted)}
+  .color-label{font-size:0.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+  .color-picker{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .color-opt{width:27px;height:27px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s}
+  .color-opt.selected{border-color:#fff;transform:scale(1.18)}
+  .btn-primary{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:12px;font-family:'Syne',sans-serif;font-size:0.92rem;font-weight:700;cursor:pointer;transition:opacity .15s;width:100%;margin-top:4px}
+  .btn-primary:hover{opacity:.85}
+  .auth-error{background:#2a1010;border:1px solid #5a2020;border-radius:8px;padding:9px 13px;font-size:0.8rem;color:#f5a0a0;font-family:'JetBrains Mono',monospace;display:none}
+  .auth-error.show{display:block}
+
+  /* profile list on login tab */
+  .profile-list-wrap{margin-bottom:16px}
+  .profile-pick-item{
+    display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);
+    border-radius:9px;padding:10px 14px;cursor:pointer;transition:border-color .15s;margin-bottom:7px;
+  }
+  .profile-pick-item:hover{border-color:var(--accent)}
+  .p-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;color:#000;flex-shrink:0}
+  .p-name{font-size:0.88rem;font-weight:700;color:#fff}
+  .p-hint{font-size:0.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .p-arrow{margin-left:auto;color:var(--muted);font-size:0.8rem}
+
+  /* pw prompt overlay */
+  #pwOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:20px}
+  #pwOverlay.open{display:flex}
+  .pw-box{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:28px;width:100%;max-width:320px}
+  .pw-box h3{font-size:1rem;font-weight:800;color:#fff;margin-bottom:6px}
+  .pw-box p{font-size:0.78rem;color:var(--muted);margin-bottom:16px;font-family:'JetBrains Mono',monospace}
+  .pw-box input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:0.9rem;outline:none;margin-bottom:10px;transition:border-color .15s}
+  .pw-box input:focus{border-color:var(--accent)}
+  .pw-error{font-size:0.75rem;color:var(--red);font-family:'JetBrains Mono',monospace;margin-bottom:8px;display:none}
+  .pw-error.show{display:block}
+  .pw-btns{display:flex;gap:8px}
+  .pw-btns button{flex:1;padding:9px;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.86rem;font-weight:700;cursor:pointer;border:none}
+  .pw-ok{background:var(--accent);color:#fff}
+  .pw-cancel{background:var(--surface);color:var(--muted);border:1px solid var(--border)!important;border:none}
+
+  /* ══ MAIN APP ══ */
+  #appScreen{flex-direction:column}
+
+  header{
+    padding:16px 30px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+    justify-content:space-between;gap:12px;flex-wrap:wrap;
+    position:sticky;top:0;background:rgba(10,11,15,.96);backdrop-filter:blur(14px);z-index:100;
+  }
+  .header-left{display:flex;align-items:center;gap:12px}
+  .logo{font-size:1.05rem;font-weight:800;letter-spacing:-0.03em;color:#fff}
+  .logo span{color:var(--accent)}
+  .user-chip{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:4px 11px 4px 5px;cursor:pointer;transition:border-color .15s}
+  .user-chip:hover{border-color:var(--border2)}
+  .chip-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;color:#000}
+  .chip-name{font-size:0.78rem;font-weight:700}
+  .chip-arrow{font-size:0.6rem;color:var(--muted)}
+  .admin-badge{background:var(--red);color:#fff;font-size:0.62rem;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.06em;font-family:'JetBrains Mono',monospace}
+
+  nav{display:flex;gap:5px}
+  nav button{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+  nav button:hover{border-color:var(--border2);color:var(--text)}
+  nav button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* overall bar */
+  .overall{margin:22px 30px 0;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 24px}
+  .overall-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+  .overall-label{font-size:0.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .overall-pct{font-size:1.8rem;font-weight:800;color:#fff;letter-spacing:-.04em}
+  .bar-outer{height:8px;background:var(--border);border-radius:999px;overflow:hidden}
+  .bar-inner{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-g));transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .overall-sub{margin-top:7px;font-size:0.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+  /* tabs */
+  .tab{display:none;padding:22px 30px 60px}
+  .tab.active{display:block}
+
+  /* fächer */
+  .faecher-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:11px;margin-top:18px}
+  .fach-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:17px 19px;transition:border-color .2s,transform .15s;position:relative;overflow:hidden}
+  .fach-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--color);border-radius:3px 0 0 3px}
+  .fach-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+  .fach-card.done{background:var(--done);border-color:var(--done-b)}
+  .fach-card.done::after{content:'✓';position:absolute;top:13px;right:15px;color:var(--accent-g);font-size:1rem;font-weight:800}
+  .fach-name{font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:2px;padding-right:20px}
+  .fach-pct-row{display:flex;justify-content:space-between;align-items:baseline;margin:7px 0 4px}
+  .fach-pct{font-family:'JetBrains Mono',monospace;font-size:0.95rem;font-weight:500;color:var(--color)}
+  .fach-min{font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--muted)}
+  .fach-bar-outer{height:4px;background:var(--border);border-radius:999px;overflow:hidden;margin-bottom:11px}
+  .fach-bar-inner{height:100%;border-radius:999px;background:var(--color);transition:width .4s cubic-bezier(.4,0,.2,1)}
+  .fach-input-row{display:flex;gap:6px;align-items:center}
+  .fach-input-row input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:6px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.82rem;outline:none;transition:border-color .15s;min-width:0}
+  .fach-input-row input:focus{border-color:var(--color)}
+  .fach-input-row input::placeholder{color:var(--muted)}
+  .btn-add{background:var(--color);color:#000;border:none;border-radius:7px;padding:6px 11px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;transition:opacity .15s;white-space:nowrap}
+  .btn-add:hover{opacity:.8}
+  .btn-reset-fach{background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 8px;font-size:0.76rem;cursor:pointer;transition:all .15s}
+  .btn-reset-fach:hover{border-color:var(--red);color:var(--red)}
+
+  /* planer */
+  .planer-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+  .planer-header h2{font-size:1rem;font-weight:800;color:#fff}
+  .week-nav{display:flex;gap:6px;align-items:center}
+  .week-nav button{background:var(--surface);border:1px solid var(--border);color:var(--text);width:29px;height:29px;border-radius:6px;font-size:0.9rem;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;justify-content:center}
+  .week-nav button:hover{border-color:var(--accent)}
+  .week-label{font-family:'JetBrains Mono',monospace;font-size:0.76rem;color:var(--muted)}
+  .week-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .day-col{background:var(--card);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+  .day-head{padding:8px 11px;border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .day-head span{display:block;font-size:0.95rem;color:#fff;letter-spacing:-.02em;font-family:'Syne',sans-serif;margin-top:2px}
+  .day-entries{padding:8px;min-height:100px}
+  .plan-entry{border-radius:5px;padding:5px 8px;margin-bottom:5px;font-size:0.7rem;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:4px}
+  .plan-entry-del{background:none;border:none;color:rgba(0,0,0,.4);cursor:pointer;font-size:0.85rem;line-height:1;flex-shrink:0}
+  .day-add-btn{width:100%;background:none;border:1px dashed var(--border);border-radius:5px;color:var(--muted);padding:5px;font-size:0.72rem;cursor:pointer;margin-top:2px;transition:all .15s;font-family:'Syne',sans-serif}
+  .day-add-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* settings */
+  .settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:10px;margin-top:18px}
+  .settings-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:14px 16px;display:flex;align-items:center;gap:10px}
+  .settings-card .color-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .settings-card .s-name{font-size:0.83rem;font-weight:700;color:#fff;flex:1}
+  .settings-card .s-target{font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--muted);margin-top:1px}
+  .settings-card input[type=number]{width:72px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:5px 8px;font-family:'JetBrains Mono',monospace;font-size:0.82rem;outline:none;text-align:center}
+  .settings-card input:focus{border-color:var(--accent)}
+  .btn-set-save{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:5px 10px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:700;cursor:pointer;transition:opacity .15s}
+  .btn-set-save:hover{opacity:.8}
+  .danger-zone{margin-top:32px;border-top:1px solid var(--border);padding-top:22px}
+  .danger-zone h3{font-size:0.76rem;color:var(--red);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px;font-family:'JetBrains Mono',monospace}
+  .btn-danger{background:none;border:1px solid var(--red);color:var(--red);padding:8px 18px;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.83rem;font-weight:700;cursor:pointer;transition:all .15s}
+  .btn-danger:hover{background:#f5605a18}
+
+  /* ══ ADMIN PANEL ══ */
+  #adminScreen{flex-direction:column}
+  .admin-header{
+    padding:16px 30px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+    justify-content:space-between;gap:12px;background:rgba(10,11,15,.96);backdrop-filter:blur(14px);
+    position:sticky;top:0;z-index:100;
+  }
+  .admin-title{font-size:1.05rem;font-weight:800;color:#fff;display:flex;align-items:center;gap:10px}
+  .btn-logout-admin{background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:600;cursor:pointer;transition:all .15s}
+  .btn-logout-admin:hover{border-color:var(--red);color:var(--red)}
+  .admin-body{padding:28px 30px 60px}
+  .admin-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:28px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 18px}
+  .stat-val{font-size:1.6rem;font-weight:800;color:#fff;letter-spacing:-.03em}
+  .stat-label{font-size:0.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px;text-transform:uppercase;letter-spacing:.1em}
+  .admin-section-label{font-size:0.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:12px}
+  .admin-user-card{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;
+    margin-bottom:10px;transition:border-color .2s;
+  }
+  .admin-user-card:hover{border-color:var(--border2)}
+  .admin-user-top{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .admin-user-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:#000;flex-shrink:0}
+  .admin-user-info{flex:1}
+  .admin-user-name{font-size:0.95rem;font-weight:700;color:#fff}
+  .admin-user-meta{font-size:0.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+  .admin-user-pct{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:700;color:var(--accent-g)}
+  .admin-del-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;transition:all .15s;font-family:'Syne',sans-serif;font-weight:600}
+  .admin-del-btn:hover{border-color:var(--red);color:var(--red)}
+  .admin-fach-mini{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:7px}
+  .fach-mini-row{display:flex;align-items:center;gap:8px;font-size:0.72rem}
+  .fach-mini-name{color:var(--muted);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'JetBrains Mono',monospace}
+  .fach-mini-bar{flex:1;height:3px;background:var(--border);border-radius:999px;overflow:hidden}
+  .fach-mini-fill{height:100%;border-radius:999px;transition:width .3s}
+  .fach-mini-pct{font-family:'JetBrains Mono',monospace;font-size:0.68rem;color:var(--text);width:30px;text-align:right}
+  .admin-pw-row{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+  .admin-pw-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:0.8rem;outline:none}
+  .admin-pw-input:focus{border-color:var(--accent)}
+  .btn-set-pw{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:700;cursor:pointer;transition:all .15s}
+  .btn-set-pw:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:300;align-items:center;justify-content:center;padding:20px}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--card);border:1px solid var(--border2);border-radius:16px;padding:24px;width:100%;max-width:330px}
+  .modal h3{font-size:0.93rem;font-weight:800;color:#fff;margin-bottom:14px}
+  .modal select,.modal input[type=number]{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 12px;font-family:'Syne',sans-serif;font-size:0.85rem;outline:none;margin-bottom:9px}
+  .modal select option{background:var(--card)}
+  .modal-btns{display:flex;gap:8px;margin-top:2px}
+  .modal-btns button{flex:1;padding:9px;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.84rem;font-weight:700;cursor:pointer;border:none}
+  .btn-ok{background:var(--accent);color:#fff}
+  .btn-cancel{background:var(--surface);color:var(--muted);border:1px solid var(--border)!important;border:none}
+
+  /* toast */
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--accent-g);color:#000;padding:8px 16px;border-radius:8px;font-weight:700;font-size:0.8rem;z-index:999;opacity:0;transform:translateY(10px);transition:all .2s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateY(0)}
+
+  /* ══ TIMER TAB ══ */
+  .timer-tab-wrap{max-width:520px;margin:0 auto}
+
+  /* mode selector */
+  .timer-mode-tabs{display:flex;gap:8px;margin-bottom:28px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:5px}
+  .timer-mode-tab{flex:1;padding:10px 6px;border:none;background:none;color:var(--muted);font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;border-radius:8px;transition:all .18s;text-align:center;line-height:1.3}
+  .timer-mode-tab .tmt-icon{display:block;font-size:1.3rem;margin-bottom:3px}
+  .timer-mode-tab.active{background:var(--accent);color:#fff}
+
+  /* fach selector */
+  .timer-fach-label{font-size:0.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:10px}
+  .timer-fach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px;margin-bottom:24px}
+  .timer-fach-opt{
+    display:flex;align-items:center;gap:8px;
+    background:var(--card);border:2px solid transparent;border-radius:9px;
+    padding:9px 12px;cursor:pointer;transition:all .15s;
+  }
+  .timer-fach-opt:hover{border-color:var(--border2)}
+  .timer-fach-opt.selected{border-color:var(--sel-color);background:var(--card)}
+  .timer-fach-opt .tfo-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .timer-fach-opt .tfo-name{font-size:0.76rem;font-weight:700;color:var(--text);line-height:1.2}
+
+  /* config area */
+  .timer-config{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px}
+  .timer-config-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .timer-config-row:last-child{margin-bottom:0}
+  .tcr-label{font-size:0.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;width:110px;flex-shrink:0}
+  .tcr-input{background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:0.9rem;outline:none;width:90px;transition:border-color .15s}
+  .tcr-input:focus{border-color:var(--accent)}
+  .tcr-presets{display:flex;gap:6px;flex-wrap:wrap}
+  .preset-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;cursor:pointer;transition:all .15s}
+  .preset-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .preset-btn.active-preset{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  /* pomodoro cycle display */
+  .pomo-cycles{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .pomo-dot{width:12px;height:12px;border-radius:50%;background:var(--border);transition:background .3s}
+  .pomo-dot.done{background:var(--accent-g)}
+  .pomo-dot.current{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+  .pomo-label{font-size:0.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-left:4px}
+
+  /* big clock display */
+  .timer-clock-wrap{text-align:center;padding:28px 0 20px}
+  .timer-big-label{font-size:0.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:12px}
+  .timer-big-time{
+    font-family:'JetBrains Mono',monospace;font-size:4.5rem;font-weight:500;
+    color:#fff;letter-spacing:.04em;line-height:1;
+    transition:color .3s;
+  }
+  .timer-big-time.running{color:var(--accent-g)}
+  .timer-big-time.warn{color:#f5c842;animation:tpulse .8s infinite}
+  .timer-big-time.over{color:var(--red);animation:tpulse .4s infinite}
+  @keyframes tpulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .timer-big-sub{font-size:0.78rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:8px;min-height:18px}
+
+  /* progress ring */
+  .timer-ring-wrap{position:relative;width:180px;height:180px;margin:0 auto 8px}
+  .timer-ring-wrap svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:var(--border);stroke-width:6}
+  .ring-prog{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .9s linear,stroke .3s}
+  .timer-ring-time{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+  /* controls */
+  .timer-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  .tc-btn{
+    display:flex;align-items:center;gap:7px;
+    padding:11px 22px;border-radius:10px;border:none;
+    font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;
+    cursor:pointer;transition:opacity .15s,transform .1s;
+  }
+  .tc-btn:hover{opacity:.85}
+  .tc-btn:active{transform:scale(.97)}
+  .tc-btn-play{background:var(--accent-g);color:#000}
+  .tc-btn-pause{background:#f5c842;color:#000}
+  .tc-btn-stop{background:var(--red);color:#fff}
+  .tc-btn-save{background:var(--accent);color:#fff}
+  .tc-btn-reset{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+
+  /* floating mini widget */
+  #timerWidget{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--card);border:1px solid var(--border2);border-radius:14px;
+    padding:11px 16px;display:flex;align-items:center;gap:12px;
+    z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.55);
+    transition:opacity .2s,transform .2s;min-width:280px;
+  }
+  #timerWidget.hidden{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(16px)}
+  .tw-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  .tw-info{flex:1;min-width:0}
+  .tw-name{font-size:0.75rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tw-mode{font-size:0.62rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+  .tw-time{font-family:'JetBrains Mono',monospace;font-size:1.15rem;font-weight:500;color:#fff;min-width:55px;text-align:center}
+  .tw-time.running{color:var(--accent-g)}
+  .tw-time.warn{color:#f5c842}
+  .tw-time.over{color:var(--red)}
+  .tw-btns{display:flex;gap:5px}
+  .twbtn{width:28px;height:28px;border-radius:7px;border:none;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center;transition:opacity .15s}
+  .twbtn:hover{opacity:.8}
+  .twbtn-pp{background:var(--accent-g);color:#000}
+  .twbtn-stop{background:var(--red);color:#fff}
+  .twbtn-goto{background:var(--accent);color:#fff;font-size:0.65rem;font-family:'Syne',sans-serif;font-weight:700;width:auto;padding:0 8px}
+  .twbtn-x{background:var(--surface);color:var(--muted);border:1px solid var(--border)}
+
+  /* ══ STATISTIKEN ══ */
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:28px}
+  .stat-big-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 16px;text-align:center;position:relative;overflow:hidden;transition:border-color .2s,transform .15s}
+  .stat-big-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+  .streak-card{border-color:#f5944a44}
+  .streak-card .sbc-val{color:#f5944a}
+  .sbc-icon{font-size:1.8rem;margin-bottom:6px}
+  .sbc-val{font-size:2.2rem;font-weight:800;color:#fff;letter-spacing:-.04em;line-height:1}
+  .sbc-label{font-size:0.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:4px}
+  .sbc-sub{font-size:0.68rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px}
+  .stats-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+  .stats-section-label{font-size:0.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:14px}
+
+  /* week chart */
+  .week-chart{display:flex;gap:8px;align-items:flex-end;height:110px}
+  .wc-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%}
+  .wc-bar-wrap{flex:1;display:flex;align-items:flex-end;width:100%}
+  .wc-bar{width:100%;background:var(--accent);border-radius:4px 4px 0 0;transition:height .4s cubic-bezier(.4,0,.2,1);min-height:0}
+  .wc-bar.today{background:var(--accent-g)}
+  .wc-val{font-size:0.6rem;font-family:'JetBrains Mono',monospace;color:var(--muted);min-height:12px}
+  .wc-label{font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:var(--muted);font-weight:600}
+  .wc-label.today{color:var(--accent-g)}
+
+  /* fach stat list */
+  .fach-stat-list{display:flex;flex-direction:column;gap:8px}
+  .fach-stat-row{display:flex;align-items:center;gap:8px}
+  .fsr-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .fsr-name{font-size:0.75rem;font-weight:600;color:var(--text);width:160px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fsr-bar-wrap{flex:1;height:5px;background:var(--border);border-radius:999px;overflow:hidden}
+  .fsr-bar{height:100%;border-radius:999px;transition:width .4s}
+  .fsr-pct{font-size:0.72rem;font-family:'JetBrains Mono',monospace;width:38px;text-align:right;flex-shrink:0}
+  .fsr-remain{font-size:0.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace;width:90px;text-align:right;flex-shrink:0}
+
+  /* achievements */
+  .achievements-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+  .ach-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;position:relative;transition:all .2s}
+  .ach-card.unlocked{border-color:var(--accent-g);background:#0f2a1a}
+  .ach-card.locked{opacity:.45;filter:grayscale(.6)}
+  .ach-icon{font-size:1.6rem;margin-bottom:5px}
+  .ach-name{font-size:0.75rem;font-weight:800;color:#fff;margin-bottom:2px}
+  .ach-desc{font-size:0.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace;line-height:1.3}
+  .ach-badge{position:absolute;top:6px;right:8px;color:var(--accent-g);font-size:0.7rem;font-weight:800}
+
+  /* session list */
+  .session-list{display:flex;flex-direction:column;gap:5px}
+  .session-item{display:flex;align-items:center;gap:9px;padding:7px 9px;background:var(--surface);border-radius:7px}
+  .si-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .si-name{font-size:0.78rem;font-weight:600;color:var(--text);flex:1}
+  .si-mins{font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:var(--accent-g);width:55px;text-align:right;flex-shrink:0}
+  .si-date{font-size:0.65rem;color:var(--muted);font-family:'JetBrains Mono',monospace;width:115px;text-align:right;flex-shrink:0}
+
+  /* achievement toast */
+  #achToast{
+    position:fixed;top:20px;right:20px;background:linear-gradient(135deg,#0f2a1a,#1a3a2a);
+    border:1px solid var(--accent-g);color:#fff;padding:12px 16px;border-radius:12px;
+    font-weight:700;font-size:0.8rem;z-index:1000;opacity:0;transform:translateY(-12px);
+    transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
+    display:flex;align-items:center;gap:10px;max-width:280px;
+    box-shadow:0 8px 24px rgba(93,232,168,.15);
+  }
+  #achToast.show{opacity:1;transform:translateY(0)}
+
+  /* streak indicator in header */
+  .streak-pill{display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid #f5944a44;border-radius:999px;padding:4px 10px;font-size:0.75rem;font-weight:700;color:#f5944a;cursor:default}
+  .streak-pill span{font-family:'JetBrains Mono',monospace}
+
+  @media(max-width:640px){
+    header,.admin-header{padding:13px 15px}
+    .overall,.tab,.admin-body{padding-left:15px;padding-right:15px}
+    .overall{margin-left:15px;margin-right:15px}
+    .week-grid{grid-template-columns:1fr 1fr}
+    .faecher-grid,.settings-grid{grid-template-columns:1fr}
+    nav button{padding:5px 9px;font-size:0.73rem}
+    .fsr-name{width:100px}
+    .fsr-remain{display:none}
+    .si-date{width:80px;font-size:.58rem}
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+  }
+  @media(max-width:400px){.week-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SCREEN 1: LOGIN / REGISTER
+══════════════════════════════════════ -->
+<div id="loginScreen" class="screen active">
+  <div class="auth-box">
+    <div class="auth-logo">Freies <span>Lernen</span></div>
+    <div class="auth-sub">Schulplaner · Freies Lernen Phase</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Anmelden</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Registrieren</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="authLogin">
+      <div class="profile-list-wrap" id="profilePickList"></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="authRegister" style="display:none">
+      <div class="auth-form">
+        <input type="text" id="regName" placeholder="Benutzername" maxlength="20"
+               onkeydown="if(event.key==='Enter') document.getElementById('regPw').focus()">
+        <input type="password" id="regPw" placeholder="Passwort wählen" maxlength="50"
+               onkeydown="if(event.key==='Enter') document.getElementById('regPw2').focus()">
+        <input type="password" id="regPw2" placeholder="Passwort wiederholen" maxlength="50"
+               onkeydown="if(event.key==='Enter') registerUser()">
+        <div class="color-label">Avatar-Farbe</div>
+        <div class="color-picker" id="colorPicker"></div>
+        <div class="auth-error" id="regError"></div>
+        <button class="btn-primary" onclick="registerUser()">Account erstellen →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Passwort-Eingabe Overlay -->
+<div id="pwOverlay">
+  <div class="pw-box">
+    <h3 id="pwTitle">Passwort eingeben</h3>
+    <p id="pwSub">Für deinen Account</p>
+    <input type="password" id="pwInput" placeholder="Passwort" maxlength="50"
+           onkeydown="if(event.key==='Enter') confirmPw()">
+    <div class="pw-error" id="pwError">Falsches Passwort!</div>
+    <div class="pw-btns">
+      <button class="pw-cancel" onclick="closePwOverlay()">Abbrechen</button>
+      <button class="pw-ok" onclick="confirmPw()">Einloggen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 2: MAIN APP (normaler User)
+══════════════════════════════════════ -->
+<div id="appScreen" class="screen">
+  <header>
+    <div class="header-left">
+      <div class="logo">Freies <span>Lernen</span></div>
+      <div class="user-chip" onclick="doLogout()">
+        <div class="chip-avatar" id="chipAvatar"></div>
+        <span class="chip-name" id="chipName"></span>
+        <span class="chip-arrow">▾</span>
+      </div>
+      <div class="streak-pill" onclick="showTab('statistiken')" title="Streak anzeigen">🔥 <span id="headerStreak">0</span> Tage</div>
+    </div>
+    <nav>
+      <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+      <button onclick="showTab('planer')">Planer</button>
+      <button onclick="showTab('timer')">⏱ Timer</button>
+      <button onclick="showTab('statistiken')">📊 Statistiken</button>
+      <button onclick="showTab('einstellungen')">Einstellungen</button>
+    </nav>
+  </header>
+
+  <div class="overall">
+    <div class="overall-top">
+      <span class="overall-label">Gesamtfortschritt</span>
+      <span class="overall-pct" id="overallPct">0%</span>
+    </div>
+    <div class="bar-outer"><div class="bar-inner" id="overallBar" style="width:0%"></div></div>
+    <div class="overall-sub" id="overallSub">0 / 3100 Minuten erledigt</div>
+  </div>
+
+  <div class="tab active" id="tab-dashboard">
+    <div class="faecher-grid" id="faecherGrid"></div>
+  </div>
+  <div class="tab" id="tab-planer">
+    <div class="planer-header">
+      <h2>Wochenplaner</h2>
+      <div class="week-nav">
+        <button onclick="changeWeek(-1)">‹</button>
+        <span class="week-label" id="weekLabel"></span>
+        <button onclick="changeWeek(1)">›</button>
+      </div>
+    </div>
+    <div class="week-grid" id="weekGrid"></div>
+  </div>
+  <div class="tab" id="tab-timer">
+    <div id="timerTabContent"></div>
+  </div>
+  <div class="tab" id="tab-statistiken">
+    <div id="statistikenContent"></div>
+  </div>
+  <div class="tab" id="tab-einstellungen">
+    <div style="color:var(--muted);font-size:0.82rem;margin-bottom:4px">Erledigte Minuten direkt setzen (zur Korrektur).</div>
+    <div class="settings-grid" id="settingsGrid"></div>
+    <div class="danger-zone">
+      <h3>⚠ Zurücksetzen</h3>
+      <button class="btn-danger" onclick="resetAll()">Alle Fortschritte zurücksetzen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN 3: ADMIN PANEL
+══════════════════════════════════════ -->
+<div id="adminScreen" class="screen">
+  <div class="admin-header">
+    <div class="admin-title">
+      <div class="logo">Freies <span>Lernen</span></div>
+      <span class="admin-badge">ADMIN</span>
+    </div>
+    <button class="btn-logout-admin" onclick="doLogout()">← Abmelden</button>
+  </div>
+  <div class="admin-body">
+    <div class="admin-stats" id="adminStats"></div>
+    <div class="admin-section-label">Alle Benutzer</div>
+    <div id="adminUserList"></div>
+  </div>
+</div>
+
+<!-- Modal Planer -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>Eintrag hinzufügen</h3>
+    <select id="modalFach"></select>
+    <input type="number" id="modalMin" placeholder="Minuten geplant" min="1" max="300">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+      <button class="btn-ok" onclick="saveModalEntry()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="achToast"></div>
+
+<!-- ══ FLOATING MINI TIMER WIDGET (shown when leaving timer tab) ══ -->
+<div id="timerWidget" class="hidden">
+  <div class="tw-dot" id="twDot"></div>
+  <div class="tw-info">
+    <div class="tw-name" id="twName">—</div>
+    <div class="tw-mode" id="twMode"></div>
+  </div>
+  <div class="tw-time" id="twTime">00:00</div>
+  <div class="tw-btns">
+    <button class="twbtn twbtn-pp"   id="twBtnPP"  onclick="timerPlayPause()"    title="Start/Pause">▶</button>
+    <button class="twbtn twbtn-stop"               onclick="timerStop(false)"    title="Stop">■</button>
+    <button class="twbtn twbtn-goto"               onclick="showTab('timer')"    title="Zum Timer">⏱ Öffnen</button>
+    <button class="twbtn twbtn-x"                  onclick="timerHideWidget()"   title="Verstecken">✕</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  FÄCHER
+// ═══════════════════════════════════════════
+const FAECHER = [
+  {id:0, name:'Mathematik',               ziel:300, color:'var(--c0)'},
+  {id:1, name:'Latein',                   ziel:250, color:'var(--c1)'},
+  {id:2, name:'Deutsch',                  ziel:345, color:'var(--c2)'},
+  {id:3, name:'Englisch',                 ziel:350, color:'var(--c3)'},
+  {id:4, name:'Chemie',                   ziel:200, color:'var(--c4)'},
+  {id:5, name:'Biologie & Umweltbild.',   ziel:200, color:'var(--c5)'},
+  {id:6, name:'Geschichte & pol. Bild.',  ziel:200, color:'var(--c6)'},
+  {id:7, name:'Physik',                   ziel:200, color:'var(--c7)'},
+  {id:8, name:'Geografie & Wirtschaft',   ziel:200, color:'var(--c8)'},
+  {id:9, name:'Musik',                    ziel:195, color:'var(--c9)'},
+  {id:10,name:'Religion katholisch',      ziel:200, color:'var(--c10)'},
+  {id:11,name:'Kunst & Gestaltung',       ziel:200, color:'var(--c11)', doppel:true},
+  {id:12,name:'Geometrisches Zeichnen',   ziel:200, color:'var(--c12)', doppel:true},
+];
+const TOTAL_ZIEL = FAECHER.reduce((s,f)=>s+f.ziel,0);
+
+const AVATAR_COLORS = ['#7c6af5','#5de8a8','#f5605a','#f5c842','#4ab8f5','#f57ac8','#a8f55d','#f5944a','#5af5e8','#c87cf5'];
+
+// ═══════════════════════════════════════════
+//  PASSWORT-HASHING (einfacher lokaler Hash)
+// ═══════════════════════════════════════════
+async function hashPw(pw) {
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ═══════════════════════════════════════════
+//  ADMIN-KONTO (fest eingebaut, Passwort änderbar)
+// ═══════════════════════════════════════════
+// Admin-Passwort: "Eduard ist cool _ * _123474284126914ncfsdkf"
+// SHA-256 davon (unveränderlich eingebaut):
+const ADMIN_HASH_REAL = 'd596cb79aeb20b7489a61fa35cc465056c26ef7b5f2e0da97246f7c0afc43513';
+
+// ═══════════════════════════════════════════
+//  USER STORAGE
+// ═══════════════════════════════════════════
+function allUsers() { try { return JSON.parse(localStorage.getItem('fl_users')||'[]'); } catch { return []; } }
+function saveUsers(u) { localStorage.setItem('fl_users', JSON.stringify(u)); }
+function userStateKey(id) { return 'fl_state_' + id; }
+function userPlanKey(id)  { return 'fl_plan_'  + id; }
+function loadUserState(id){ try { return JSON.parse(localStorage.getItem(userStateKey(id))||'{}'); } catch { return {}; } }
+function saveUserState(id,s){ localStorage.setItem(userStateKey(id), JSON.stringify(s)); }
+function loadUserPlan(id) { try { return JSON.parse(localStorage.getItem(userPlanKey(id)) ||'{}'); } catch { return {}; } }
+function saveUserPlan(id,p)  { localStorage.setItem(userPlanKey(id),  JSON.stringify(p)); }
+
+// ═══════════════════════════════════════════
+//  SESSION
+// ═══════════════════════════════════════════
+let activeUser  = null; // {id,name,color}  or null
+let isAdmin     = false;
+let state = {}, plan = {};
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function doLogout() {
+  activeUser = null; isAdmin = false; state = {}; plan = {};
+  showScreen('loginScreen');
+  renderProfilePickList();
+}
+
+function loginAsAdmin() {
+  isAdmin = true; activeUser = null;
+  showScreen('adminScreen');
+  renderAdminPanel();
+}
+
+function loginAsUser(user) {
+  activeUser = user; isAdmin = false;
+  state = loadUserState(user.id);
+  plan  = loadUserPlan(user.id);
+  const av = document.getElementById('chipAvatar');
+  av.style.background = user.color;
+  av.textContent = user.name[0].toUpperCase();
+  document.getElementById('chipName').textContent = user.name;
+  showScreen('appScreen');
+  showTab('dashboard');
+}
+
+// ═══════════════════════════════════════════
+//  LOGIN SCREEN
+// ═══════════════════════════════════════════
+let selectedColor = AVATAR_COLORS[0];
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+  [...document.querySelectorAll('.auth-tab')].find(b => b.textContent.includes(tab === 'login' ? 'Anmelden' : 'Registrieren'))?.classList.add('active');
+  document.getElementById('authLogin').style.display    = tab === 'login'    ? 'block' : 'none';
+  document.getElementById('authRegister').style.display = tab === 'register' ? 'block' : 'none';
+  if (tab === 'login') renderProfilePickList();
+}
+
+function renderColorPicker() {
+  const cp = document.getElementById('colorPicker');
+  cp.innerHTML = '';
+  AVATAR_COLORS.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'color-opt' + (c === selectedColor ? ' selected' : '');
+    d.style.background = c;
+    d.onclick = () => { selectedColor = c; document.querySelectorAll('.color-opt').forEach(x => x.classList.remove('selected')); d.classList.add('selected'); };
+    cp.appendChild(d);
+  });
+}
+
+function renderProfilePickList() {
+  const users = allUsers();
+  const wrap  = document.getElementById('profilePickList');
+  if (!users.length && !true) { wrap.innerHTML = '<p style="color:var(--muted);font-size:.8rem;text-align:center;padding:12px 0">Noch keine Accounts – registriere dich!</p>'; return; }
+  wrap.innerHTML = '';
+
+  // Admin entry
+  const adminItem = document.createElement('div');
+  adminItem.className = 'profile-pick-item';
+  adminItem.style.borderColor = 'var(--red)';
+  adminItem.innerHTML = `
+    <div class="p-avatar" style="background:var(--red);color:#fff;font-size:.7rem">ADM</div>
+    <div><div class="p-name">Administrator</div><div class="p-hint">Vollzugriff auf alle Accounts</div></div>
+    <span class="p-arrow">›</span>`;
+  adminItem.onclick = () => openPwOverlay('__admin__', 'Administrator', 'Admin-Passwort eingeben');
+  wrap.appendChild(adminItem);
+
+  if (!users.length) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'color:var(--muted);font-size:.78rem;text-align:center;padding:10px 0';
+    empty.textContent = 'Noch keine Benutzer – registriere dich!';
+    wrap.appendChild(empty);
+    return;
+  }
+
+  users.forEach(u => {
+    const s    = loadUserState(u.id);
+    const done = FAECHER.reduce((acc,f) => acc + (s[f.id]||0), 0);
+    const pct  = Math.min(100, Math.round(done / TOTAL_ZIEL * 100));
+    const item = document.createElement('div');
+    item.className = 'profile-pick-item';
+    item.innerHTML = `
+      <div class="p-avatar" style="background:${u.color}">${u.name[0].toUpperCase()}</div>
+      <div><div class="p-name">${u.name}</div><div class="p-hint">${pct}% · ${done}/${TOTAL_ZIEL} min</div></div>
+      <span class="p-arrow">›</span>`;
+    item.onclick = () => openPwOverlay(u.id, u.name, `Passwort für ${u.name}`);
+    wrap.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════════
+//  REGISTER
+// ═══════════════════════════════════════════
+async function registerUser() {
+  const name = document.getElementById('regName').value.trim();
+  const pw   = document.getElementById('regPw').value;
+  const pw2  = document.getElementById('regPw2').value;
+  const err  = document.getElementById('regError');
+  err.classList.remove('show');
+
+  if (!name)          { err.textContent = 'Bitte Benutzernamen eingeben.'; err.classList.add('show'); return; }
+  if (pw.length < 4)  { err.textContent = 'Passwort min. 4 Zeichen.';     err.classList.add('show'); return; }
+  if (pw !== pw2)     { err.textContent = 'Passwörter stimmen nicht überein.'; err.classList.add('show'); return; }
+
+  const users = allUsers();
+  if (users.find(u => u.name.toLowerCase() === name.toLowerCase())) {
+    err.textContent = 'Benutzername bereits vergeben.'; err.classList.add('show'); return;
+  }
+  if (name.toLowerCase() === 'admin') {
+    err.textContent = '"admin" ist reserviert.'; err.classList.add('show'); return;
+  }
+
+  const hash = await hashPw(pw);
+  const newU = { id: Date.now().toString(), name, color: selectedColor, hash };
+  users.push(newU);
+  saveUsers(users);
+
+  document.getElementById('regName').value = '';
+  document.getElementById('regPw').value   = '';
+  document.getElementById('regPw2').value  = '';
+  showToast('Account erstellt! Du kannst dich jetzt einloggen.');
+  switchAuthTab('login');
+}
+
+// ═══════════════════════════════════════════
+//  PASSWORT-OVERLAY
+// ═══════════════════════════════════════════
+let pwTargetId = null;
+
+function openPwOverlay(userId, name, title) {
+  pwTargetId = userId;
+  document.getElementById('pwTitle').textContent = title;
+  document.getElementById('pwSub').textContent   = name;
+  document.getElementById('pwInput').value = '';
+  document.getElementById('pwError').classList.remove('show');
+  document.getElementById('pwOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('pwInput').focus(), 100);
+}
+
+function closePwOverlay() {
+  document.getElementById('pwOverlay').classList.remove('open');
+  pwTargetId = null;
+}
+
+async function confirmPw() {
+  const pw   = document.getElementById('pwInput').value;
+  const errEl = document.getElementById('pwError');
+  errEl.classList.remove('show');
+
+  if (!pw) { errEl.classList.add('show'); return; }
+  const entered = await hashPw(pw);
+
+  if (pwTargetId === '__admin__') {
+    if (entered === ADMIN_HASH_REAL) {
+      closePwOverlay();
+      loginAsAdmin();
+    } else {
+      errEl.classList.add('show');
+    }
+    return;
+  }
+
+  const users = allUsers();
+  const user  = users.find(u => u.id === pwTargetId);
+  if (!user) { errEl.classList.add('show'); return; }
+
+  if (entered === user.hash) {
+    closePwOverlay();
+    loginAsUser(user);
+  } else {
+    errEl.classList.add('show');
+  }
+}
+
+// ═══════════════════════════════════════════
+//  TABS (App)
+// ═══════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  const map = {dashboard:'Dashboard', planer:'Planer', timer:'⏱ Timer', statistiken:'📊 Statistiken', einstellungen:'Einstellungen'};
+  [...document.querySelectorAll('nav button')].find(b => b.textContent === map[id])?.classList.add('active');
+  if (id === 'planer') renderPlaner();
+  if (id === 'einstellungen') renderSettings();
+  if (id === 'statistiken') renderStatistiken();
+  if (id === 'timer') { renderTimerTab(); document.getElementById('timerWidget').classList.add('hidden'); }
+  else if (timerFachId !== null) document.getElementById('timerWidget').classList.remove('hidden');
+}
+
+// ═══════════════════════════════════════════
+//  OVERALL
+// ═══════════════════════════════════════════
+function updateOverall() {
+  const done = FAECHER.reduce((s,f) => s + (state[f.id]||0), 0);
+  const pct  = Math.min(100, Math.round(done / TOTAL_ZIEL * 100));
+  document.getElementById('overallBar').style.width = pct + '%';
+  document.getElementById('overallPct').textContent = pct + '%';
+  document.getElementById('overallSub').textContent = `${done} / ${TOTAL_ZIEL} Minuten erledigt`;
+  // update streak pill
+  const streakEl = document.getElementById('headerStreak');
+  if (streakEl) streakEl.textContent = getStreak().current;
+}
+
+// ═══════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════
+function getCssVar(v) {
+  return getComputedStyle(document.documentElement).getPropertyValue(v.replace('var(','').replace(')','').trim()).trim();
+}
+
+function renderDashboard() {
+  const grid = document.getElementById('faecherGrid');
+  grid.innerHTML = '';
+  FAECHER.forEach(f => {
+    const done = state[f.id]||0;
+    const pct  = Math.min(100, Math.round(done/f.ziel*100));
+    const card = document.createElement('div');
+    card.className = 'fach-card' + (done >= f.ziel ? ' done' : '');
+    card.style.setProperty('--color', f.color);
+    card.innerHTML = `
+      <div class="fach-name">${f.name}${f.doppel?'<span style="font-size:.65rem;color:var(--muted);font-weight:400;margin-left:6px">Doppelstunde</span>':''}</div>
+      <div class="fach-pct-row">
+        <span class="fach-pct">${pct}%</span>
+        <span class="fach-min">${done} / ${f.ziel} min</span>
+      </div>
+      <div class="fach-bar-outer"><div class="fach-bar-inner" style="width:${pct}%"></div></div>
+      <div class="fach-input-row">
+        <input type="number" id="inp_${f.id}" placeholder="Minuten hinzufügen" min="1" max="500"
+               onkeydown="if(event.key==='Enter') addMinutes(${f.id})">
+        <button class="btn-add" onclick="addMinutes(${f.id})">+ Add</button>
+        <button class="btn-reset-fach" onclick="resetFach(${f.id})">↺</button>
+      </div>`;
+    grid.appendChild(card);
+  });
+  updateOverall();
+}
+
+function addMinutes(fachId) {
+  const inp = document.getElementById('inp_'+fachId);
+  const val = parseInt(inp.value);
+  if (!val||val<1) { showToast('Bitte Minuten eingeben!'); return; }
+  const before = state[fachId]||0;
+  state[fachId] = before + val;
+  inp.value = '';
+  // record session log
+  const logKey = 'fl_log_' + activeUser.id;
+  let log = []; try { log = JSON.parse(localStorage.getItem(logKey)||'[]'); } catch {}
+  const today = new Date().toISOString().split('T')[0];
+  log.push({date: today, fachId, minutes: val, ts: Date.now()});
+  localStorage.setItem(logKey, JSON.stringify(log));
+  // update streak
+  updateStreak();
+  saveUserState(activeUser.id, state);
+  renderDashboard();
+  checkAchievements(fachId, before, state[fachId]);
+  if (state[fachId] >= FAECHER[fachId].ziel && before < FAECHER[fachId].ziel) showToast('🎉 ' + FAECHER[fachId].name + ' abgeschlossen!');
+  else showToast('+'+val+' min → '+FAECHER[fachId].name);
+}
+
+// ═══════════════════════════════════════════
+//  STREAK SYSTEM
+// ═══════════════════════════════════════════
+function getStreakKey(id) { return 'fl_streak_' + id; }
+function getStreakData(id) { try { return JSON.parse(localStorage.getItem(getStreakKey(id))||'{}'); } catch { return {}; } }
+function saveStreakData(id, d) { localStorage.setItem(getStreakKey(id), JSON.stringify(d)); }
+
+function updateStreak() {
+  if (!activeUser) return;
+  const today = new Date().toISOString().split('T')[0];
+  const data = getStreakData(activeUser.id);
+  if (data.lastDate === today) return; // already counted today
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yKey = yesterday.toISOString().split('T')[0];
+  if (data.lastDate === yKey) {
+    data.current = (data.current||0) + 1;
+  } else {
+    data.current = 1;
+  }
+  data.best = Math.max(data.best||0, data.current);
+  data.lastDate = today;
+  data.totalDays = (data.totalDays||0) + 1;
+  saveStreakData(activeUser.id, data);
+}
+
+function getStreak() {
+  if (!activeUser) return {current:0, best:0, totalDays:0};
+  const data = getStreakData(activeUser.id);
+  // check if streak is still active (studied today or yesterday)
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yKey = yesterday.toISOString().split('T')[0];
+  if (data.lastDate !== today && data.lastDate !== yKey) {
+    data.current = 0; // streak broken
+  }
+  return {current: data.current||0, best: data.best||0, totalDays: data.totalDays||0};
+}
+
+// ═══════════════════════════════════════════
+//  ACHIEVEMENTS
+// ═══════════════════════════════════════════
+const ACHIEVEMENTS = [
+  {id:'first_min',   icon:'🌱', name:'Erster Schritt',    desc:'Erste Minute gelernt!',      check:(s)=>Object.values(s).some(v=>v>0)},
+  {id:'hour_done',   icon:'⏰', name:'Eine Stunde',        desc:'60+ Minuten in einem Fach',   check:(s)=>Object.values(s).some(v=>v>=60)},
+  {id:'half_total',  icon:'🏃', name:'Halbzeit!',          desc:'50% Gesamtfortschritt',       check:(s,t)=>t>=50},
+  {id:'all_started', icon:'📚', name:'Allrounder',         desc:'Alle Fächer begonnen',        check:(s)=>FAECHER.every(f=>(s[f.id]||0)>0)},
+  {id:'fach_done',   icon:'✅', name:'Erstes Fach fertig', desc:'Ein Fach abgeschlossen',      check:(s)=>FAECHER.some(f=>(s[f.id]||0)>=f.ziel)},
+  {id:'streak3',     icon:'🔥', name:'On Fire!',           desc:'3 Tage Streak',               check:(s,t,streak)=>streak>=3},
+  {id:'streak7',     icon:'💎', name:'Woche voll!',        desc:'7 Tage Streak',               check:(s,t,streak)=>streak>=7},
+  {id:'three_done',  icon:'🏆', name:'Dreifach stark',     desc:'3 Fächer abgeschlossen',      check:(s)=>FAECHER.filter(f=>(s[f.id]||0)>=f.ziel).length>=3},
+  {id:'all_done',    icon:'👑', name:'Meister!',           desc:'Alle Fächer abgeschlossen!',  check:(s)=>FAECHER.every(f=>(s[f.id]||0)>=f.ziel)},
+  {id:'300min',      icon:'⚡', name:'Ausdauer',           desc:'300+ Minuten gesamt',         check:(s)=>Object.values(s).reduce((a,b)=>a+b,0)>=300},
+  {id:'speedrun',    icon:'🚀', name:'Schnellstarter',     desc:'50 Min in einem Tag',         check:(s,t,str,dayMins)=>dayMins>=50},
+];
+
+function getAchievementsKey(id) { return 'fl_ach_' + id; }
+function getUnlocked() { try { return JSON.parse(localStorage.getItem(getAchievementsKey(activeUser.id))||'[]'); } catch { return []; } }
+function saveUnlocked(arr) { localStorage.setItem(getAchievementsKey(activeUser.id), JSON.stringify(arr)); }
+
+function checkAchievements(fachId, before, after) {
+  if (!activeUser) return;
+  const unlocked = getUnlocked();
+  const streak = getStreak().current;
+  const totalPct = Math.min(100, Math.round(FAECHER.reduce((s,f)=>s+(state[f.id]||0),0)/TOTAL_ZIEL*100));
+  // calc today mins
+  const logKey = 'fl_log_' + activeUser.id;
+  let log = []; try { log = JSON.parse(localStorage.getItem(logKey)||'[]'); } catch {}
+  const today = new Date().toISOString().split('T')[0];
+  const dayMins = log.filter(e=>e.date===today).reduce((s,e)=>s+e.minutes,0);
+
+  ACHIEVEMENTS.forEach(ach => {
+    if (!unlocked.includes(ach.id) && ach.check(state, totalPct, streak, dayMins)) {
+      unlocked.push(ach.id);
+      saveUnlocked(unlocked);
+      showAchievementToast(ach);
+    }
+  });
+}
+
+function showAchievementToast(ach) {
+  const el = document.getElementById('achToast');
+  el.innerHTML = `<span style="font-size:1.4rem">${ach.icon}</span><div><div style="font-weight:800;font-size:.85rem">Achievement unlocked!</div><div style="font-size:.78rem;opacity:.8">${ach.name} – ${ach.desc}</div></div>`;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════════
+//  STATISTIKEN TAB
+// ═══════════════════════════════════════════
+function renderStatistiken() {
+  const wrap = document.getElementById('statistikenContent');
+  const streak = getStreak();
+  const unlocked = getUnlocked();
+  const totalDone = FAECHER.reduce((s,f)=>s+(state[f.id]||0),0);
+  const totalPct = Math.min(100, Math.round(totalDone/TOTAL_ZIEL*100));
+  const doneFaecher = FAECHER.filter(f=>(state[f.id]||0)>=f.ziel).length;
+  const logKey = 'fl_log_' + activeUser.id;
+  let log = []; try { log = JSON.parse(localStorage.getItem(logKey)||'[]'); } catch {}
+  const today = new Date().toISOString().split('T')[0];
+  const todayMins = log.filter(e=>e.date===today).reduce((s,e)=>s+e.minutes,0);
+  // weekly activity - last 7 days
+  const weekData = [];
+  for (let i=6;i>=0;i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const k = d.toISOString().split('T')[0];
+    const mins = log.filter(e=>e.date===k).reduce((s,e)=>s+e.minutes,0);
+    weekData.push({label:['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()], mins, key:k, isToday:k===today});
+  }
+  const maxWeek = Math.max(...weekData.map(d=>d.mins),1);
+
+  // Top fach
+  const topFach = [...FAECHER].sort((a,b)=>(state[b.id]||0)-(state[a.id]||0))[0];
+
+  // Session count
+  const sessionCount = log.length;
+
+  wrap.innerHTML = `
+  <div class="stats-grid">
+    <div class="stat-big-card streak-card">
+      <div class="sbc-icon">🔥</div>
+      <div class="sbc-val">${streak.current}</div>
+      <div class="sbc-label">Tage Streak</div>
+      <div class="sbc-sub">Bester: ${streak.best} Tage</div>
+    </div>
+    <div class="stat-big-card">
+      <div class="sbc-icon">⏱</div>
+      <div class="sbc-val">${totalDone}</div>
+      <div class="sbc-label">Min. gesamt</div>
+      <div class="sbc-sub">${totalPct}% des Ziels</div>
+    </div>
+    <div class="stat-big-card">
+      <div class="sbc-icon">📅</div>
+      <div class="sbc-val">${todayMins}</div>
+      <div class="sbc-label">Heute</div>
+      <div class="sbc-sub">${streak.totalDays} Lerntage total</div>
+    </div>
+    <div class="stat-big-card">
+      <div class="sbc-icon">✅</div>
+      <div class="sbc-val">${doneFaecher}/${FAECHER.length}</div>
+      <div class="sbc-label">Fächer fertig</div>
+      <div class="sbc-sub">${sessionCount} Sitzungen</div>
+    </div>
+  </div>
+
+  <div class="stats-section">
+    <div class="stats-section-label">📈 Aktivität – letzte 7 Tage</div>
+    <div class="week-chart">
+      ${weekData.map(d=>`
+        <div class="wc-col">
+          <div class="wc-bar-wrap">
+            <div class="wc-bar ${d.isToday?'today':''}" style="height:${Math.round(d.mins/maxWeek*100)}%;min-height:${d.mins>0?'6px':'0'}"></div>
+          </div>
+          <div class="wc-val">${d.mins>0?d.mins:''}</div>
+          <div class="wc-label ${d.isToday?'today':''}">${d.label}</div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="stats-section">
+    <div class="stats-section-label">📊 Fächer-Übersicht</div>
+    <div class="fach-stat-list">
+      ${FAECHER.map(f=>{
+        const done=state[f.id]||0, pct=Math.min(100,Math.round(done/f.ziel*100));
+        const col=getCssVar(f.color);
+        const remaining=Math.max(0,f.ziel-done);
+        return `<div class="fach-stat-row">
+          <div class="fsr-dot" style="background:${col}"></div>
+          <div class="fsr-name">${f.name}</div>
+          <div class="fsr-bar-wrap"><div class="fsr-bar" style="width:${pct}%;background:${col}"></div></div>
+          <div class="fsr-pct" style="color:${col}">${pct}%</div>
+          <div class="fsr-remain">${done>=f.ziel?'✓ Fertig!':remaining+' min noch'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <div class="stats-section">
+    <div class="stats-section-label">🏆 Achievements (${unlocked.length}/${ACHIEVEMENTS.length})</div>
+    <div class="achievements-grid">
+      ${ACHIEVEMENTS.map(ach=>{
+        const got=unlocked.includes(ach.id);
+        return `<div class="ach-card ${got?'unlocked':'locked'}">
+          <div class="ach-icon">${ach.icon}</div>
+          <div class="ach-name">${ach.name}</div>
+          <div class="ach-desc">${ach.desc}</div>
+          ${got?'<div class="ach-badge">✓</div>':''}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <div class="stats-section">
+    <div class="stats-section-label">🕐 Letzte Lern-Sessions</div>
+    <div class="session-list">
+      ${log.length===0?'<div style="color:var(--muted);font-size:.82rem;padding:12px 0">Noch keine Sessions aufgezeichnet.</div>':
+        [...log].reverse().slice(0,20).map(e=>{
+          const f=FAECHER[e.fachId], col=getCssVar(f.color);
+          const dt=new Date(e.ts);
+          return `<div class="session-item">
+            <div class="si-dot" style="background:${col}"></div>
+            <div class="si-name">${f.name}</div>
+            <div class="si-mins">+${e.minutes} min</div>
+            <div class="si-date">${dt.toLocaleDateString('de-AT')} ${dt.toLocaleTimeString('de-AT',{hour:'2-digit',minute:'2-digit'})}</div>
+          </div>`;
+        }).join('')}
+    </div>
+  </div>`;
+}
+
+function resetFach(fachId) {
+  if (!confirm('Fortschritt für '+FAECHER[fachId].name+' zurücksetzen?')) return;
+  state[fachId] = 0;
+  saveUserState(activeUser.id, state);
+  renderDashboard();
+}
+
+// ═══════════════════════════════════════════
+//  PLANER
+// ═══════════════════════════════════════════
+const START_DATE = getMonday(new Date());
+let planWeekOffset = 0;
+
+function getMonday(d) {
+  const date = new Date(d), day = date.getDay();
+  date.setDate(date.getDate() + (day===0?-6:1-day));
+  date.setHours(0,0,0,0); return date;
+}
+function dateKey(d) { return d.toISOString().split('T')[0]; }
+function changeWeek(dir) { planWeekOffset = Math.max(0,Math.min(1,planWeekOffset+dir)); renderPlaner(); }
+
+let modalDateKey = null;
+
+function renderPlaner() {
+  const grid = document.getElementById('weekGrid');
+  grid.innerHTML = '';
+  const ws = new Date(START_DATE);
+  ws.setDate(ws.getDate() + planWeekOffset*7);
+  const days   = ['Mo','Di','Mi','Do','Fr'];
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  document.getElementById('weekLabel').textContent = `Woche ${planWeekOffset+1} · ${ws.getDate()}. ${months[ws.getMonth()]}`;
+  for (let i=0;i<5;i++) {
+    const d = new Date(ws); d.setDate(d.getDate()+i);
+    const key = dateKey(d), entries = plan[key]||[];
+    const col = document.createElement('div'); col.className='day-col';
+    col.innerHTML = `<div class="day-head">${days[i]}<span>${d.getDate()}. ${months[d.getMonth()]}</span></div><div class="day-entries" id="de_${key}"></div>`;
+    grid.appendChild(col);
+    const de = col.querySelector('.day-entries');
+    entries.forEach((e,idx) => {
+      const f = FAECHER[e.fachId], pill = document.createElement('div');
+      pill.className='plan-entry'; pill.style.background=getCssVar(f.color); pill.style.color='#000';
+      pill.innerHTML=`<span>${f.name.split(' ')[0]} · ${e.min}min</span><button class="plan-entry-del" onclick="deletePlanEntry('${key}',${idx})">×</button>`;
+      de.appendChild(pill);
+    });
+    const ab = document.createElement('button'); ab.className='day-add-btn'; ab.textContent='+ Eintrag'; ab.onclick=()=>openModal(key); de.appendChild(ab);
+  }
+}
+
+function openModal(key) {
+  modalDateKey=key;
+  document.getElementById('modalFach').innerHTML=FAECHER.map(f=>`<option value="${f.id}">${f.name}</option>`).join('');
+  document.getElementById('modalMin').value='';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); modalDateKey=null; }
+function saveModalEntry() {
+  const fachId=parseInt(document.getElementById('modalFach').value);
+  const min=parseInt(document.getElementById('modalMin').value);
+  if (!min||min<1) { showToast('Bitte Minuten eingeben!'); return; }
+  if (!plan[modalDateKey]) plan[modalDateKey]=[];
+  plan[modalDateKey].push({fachId,min});
+  saveUserPlan(activeUser.id, plan);
+  closeModal(); renderPlaner(); showToast('Gespeichert!');
+}
+function deletePlanEntry(key,idx) { plan[key].splice(idx,1); saveUserPlan(activeUser.id,plan); renderPlaner(); }
+
+// ═══════════════════════════════════════════
+//  EINSTELLUNGEN
+// ═══════════════════════════════════════════
+function renderSettings() {
+  const grid=document.getElementById('settingsGrid'); grid.innerHTML='';
+  FAECHER.forEach(f=>{
+    const done=state[f.id]||0, card=document.createElement('div'); card.className='settings-card';
+    card.innerHTML=`<div class="color-dot" style="background:${getCssVar(f.color)}"></div>
+      <div style="flex:1"><div class="s-name">${f.name}</div><div class="s-target">Ziel: ${f.ziel} min</div></div>
+      <input type="number" id="set_${f.id}" value="${done}" min="0" max="9999">
+      <button class="btn-set-save" onclick="setMinutes(${f.id})">✓</button>`;
+    grid.appendChild(card);
+  });
+}
+function setMinutes(fachId) {
+  const val=parseInt(document.getElementById('set_'+fachId).value);
+  if (isNaN(val)||val<0) return;
+  state[fachId]=val; saveUserState(activeUser.id,state); renderDashboard(); renderSettings(); showToast('Gespeichert!');
+}
+function resetAll() {
+  if (!confirm('Alle Fortschritte zurücksetzen?')) return;
+  state={}; plan={}; saveUserState(activeUser.id,state); saveUserPlan(activeUser.id,plan);
+  renderDashboard(); showToast('Zurückgesetzt.');
+}
+
+// ═══════════════════════════════════════════
+//  ADMIN PANEL
+// ═══════════════════════════════════════════
+function renderAdminPanel() {
+  const users = allUsers();
+  const totalUsers = users.length;
+  const totalDone  = users.reduce((acc,u) => {
+    const s = loadUserState(u.id);
+    return acc + FAECHER.reduce((a,f) => a + (s[f.id]||0), 0);
+  }, 0);
+  const totalMax = totalUsers * TOTAL_ZIEL;
+  const avgPct   = totalMax > 0 ? Math.round(totalDone / totalMax * 100) : 0;
+  const finished = users.filter(u => {
+    const s = loadUserState(u.id);
+    return FAECHER.every(f => (s[f.id]||0) >= f.ziel);
+  }).length;
+
+  // Stats cards
+  document.getElementById('adminStats').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${totalUsers}</div><div class="stat-label">Benutzer</div></div>
+    <div class="stat-card"><div class="stat-val">${avgPct}%</div><div class="stat-label">Ø Fortschritt</div></div>
+    <div class="stat-card"><div class="stat-val">${finished}</div><div class="stat-label">Fertig</div></div>
+    <div class="stat-card"><div class="stat-val">${totalDone}</div><div class="stat-label">Min. gesamt</div></div>`;
+
+  // User list
+  const list = document.getElementById('adminUserList');
+  list.innerHTML = '';
+  if (!users.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:.82rem">Noch keine Benutzer registriert.</p>';
+    return;
+  }
+
+  users.forEach(u => {
+    const s    = loadUserState(u.id);
+    const done = FAECHER.reduce((acc,f) => acc + (s[f.id]||0), 0);
+    const pct  = Math.min(100, Math.round(done / TOTAL_ZIEL * 100));
+
+    const card = document.createElement('div');
+    card.className = 'admin-user-card';
+
+    const fachRows = FAECHER.map(f => {
+      const fd  = s[f.id]||0;
+      const fp  = Math.min(100, Math.round(fd/f.ziel*100));
+      const col = getCssVar(f.color);
+      return `<div class="fach-mini-row">
+        <span class="fach-mini-name">${f.name}</span>
+        <div class="fach-mini-bar"><div class="fach-mini-fill" style="width:${fp}%;background:${col}"></div></div>
+        <span class="fach-mini-pct">${fp}%</span>
+      </div>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="admin-user-top">
+        <div class="admin-user-avatar" style="background:${u.color}">${u.name[0].toUpperCase()}</div>
+        <div class="admin-user-info">
+          <div class="admin-user-name">${u.name}</div>
+          <div class="admin-user-meta">${done} / ${TOTAL_ZIEL} min · Registriert ${new Date(parseInt(u.id)).toLocaleDateString('de-AT')}</div>
+        </div>
+        <div class="admin-user-pct">${pct}%</div>
+        <button class="admin-del-btn" onclick="adminDeleteUser('${u.id}','${u.name}')">Löschen</button>
+      </div>
+      <div class="admin-fach-mini">${fachRows}</div>
+      <div class="admin-pw-row">
+        <span style="font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap">Neues Passwort:</span>
+        <input class="admin-pw-input" type="password" id="adminpw_${u.id}" placeholder="Neues Passwort setzen">
+        <button class="btn-set-pw" onclick="adminSetPw('${u.id}')">Setzen</button>
+      </div>`;
+    list.appendChild(card);
+  });
+
+
+}
+
+async function adminSetPw(userId) {
+  const inp = document.getElementById('adminpw_' + userId);
+  const pw  = inp.value.trim();
+  if (pw.length < 4) { showToast('Passwort min. 4 Zeichen!'); return; }
+  const users = allUsers();
+  const idx   = users.findIndex(u => u.id === userId);
+  if (idx === -1) return;
+  users[idx].hash = await hashPw(pw);
+  saveUsers(users);
+  inp.value = '';
+  showToast('Passwort für ' + users[idx].name + ' geändert!');
+}
+
+
+
+function adminDeleteUser(id, name) {
+  if (!confirm(`Benutzer "${name}" wirklich löschen? Alle Daten gehen verloren.`)) return;
+  const users = allUsers().filter(u => u.id !== id);
+  saveUsers(users);
+  localStorage.removeItem(userStateKey(id));
+  localStorage.removeItem(userPlanKey(id));
+  renderAdminPanel();
+  showToast(name + ' gelöscht.');
+}
+
+// ═══════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ═══════════════════════════════════════════
+//  TIMER – full system
+// ═══════════════════════════════════════════
+// State
+let timerFachId   = null;
+let timerMode     = 'stopwatch'; // 'stopwatch' | 'countdown' | 'pomodoro'
+let timerSeconds  = 0;   // elapsed for stopwatch; remaining for countdown/pomo
+let timerTarget   = 0;   // total seconds for countdown/pomo work phase
+let timerRunning  = false;
+let timerInterval = null;
+
+// Pomodoro state
+let pomoCycles      = 4;    // total pomodoro cycles configured
+let pomoCycleLen    = 25;   // work minutes
+let pomoBreakLen    = 5;    // short break minutes
+let pomoLongBreak   = 15;   // long break minutes
+let pomoCurrentCycle= 0;    // 0-based index of current cycle
+let pomoPhase       = 'work'; // 'work' | 'break' | 'longbreak'
+
+// UI selection state
+let selFachId     = null;
+let selMode       = 'stopwatch';
+
+// ── RENDER TIMER TAB ──
+function renderTimerTab() {
+  const wrap = document.getElementById('timerTabContent');
+
+  // Fach selection
+  const fachOpts = FAECHER.map(f => {
+    const col = getCssVar(f.color);
+    const isSel = selFachId === f.id;
+    return `<div class="timer-fach-opt ${isSel?'selected':''}"
+      style="${isSel?`--sel-color:${col}`:''}; border-color:${isSel?col:'transparent'}"
+      onclick="selectTimerFach(${f.id})">
+      <div class="tfo-dot" style="background:${col}"></div>
+      <div class="tfo-name">${f.name}</div>
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = `
+  <div class="timer-tab-wrap">
+
+    <div class="timer-fach-label">1 — Fach wählen</div>
+    <div class="timer-fach-grid">${fachOpts}</div>
+
+    <div class="timer-fach-label">2 — Modus wählen</div>
+    <div class="timer-mode-tabs">
+      <button class="timer-mode-tab ${selMode==='stopwatch'?'active':''}" onclick="selectTimerModeUI('stopwatch')">
+        <span class="tmt-icon">⏱</span>Stoppuhr
+      </button>
+      <button class="timer-mode-tab ${selMode==='countdown'?'active':''}" onclick="selectTimerModeUI('countdown')">
+        <span class="tmt-icon">⏳</span>Countdown
+      </button>
+      <button class="timer-mode-tab ${selMode==='pomodoro'?'active':''}" onclick="selectTimerModeUI('pomodoro')">
+        <span class="tmt-icon">🍅</span>Pomodoro
+      </button>
+    </div>
+
+    <div id="timerConfigArea"></div>
+
+    <div class="timer-clock-wrap">
+      <div class="timer-ring-wrap" id="timerRingWrap">
+        <svg width="180" height="180" viewBox="0 0 180 180">
+          <circle class="ring-bg" cx="90" cy="90" r="82"/>
+          <circle class="ring-prog" id="ringProg" cx="90" cy="90" r="82"
+            stroke="#7c6af5"
+            stroke-dasharray="515"
+            stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-ring-time">
+          <div class="timer-big-time" id="timerBigTime">00:00</div>
+          <div class="timer-big-sub" id="timerBigSub"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="timer-controls" id="timerControls"></div>
+
+  </div>`;
+
+  renderTimerConfig();
+  updateTimerClockUI();
+  renderTimerControls();
+}
+
+function selectTimerFach(id) {
+  selFachId = id;
+  renderTimerTab();
+}
+
+function selectTimerModeUI(mode) {
+  // If timer running, ask
+  if (timerRunning && mode !== timerMode) {
+    if (!confirm('Timer läuft! Modus wechseln und Timer stoppen?')) return;
+    timerStop(true);
+  }
+  selMode = mode;
+  renderTimerTab();
+}
+
+function renderTimerConfig() {
+  const area = document.getElementById('timerConfigArea');
+  if (!area) return;
+
+  if (selMode === 'stopwatch') {
+    area.innerHTML = `
+      <div class="timer-config">
+        <div style="font-size:.82rem;color:var(--muted)">Die Stoppuhr zählt hoch. Am Ende speicherst du die Zeit beim gewählten Fach.</div>
+      </div>`;
+
+  } else if (selMode === 'countdown') {
+    const presets = [5,10,15,20,25,30,45,60];
+    const presetsHTML = presets.map(p =>
+      `<button class="preset-btn ${timerTarget===p*60&&timerFachId!==null?'active-preset':''}"
+        onclick="setCdPreset(${p})">${p} min</button>`).join('');
+    area.innerHTML = `
+      <div class="timer-config">
+        <div class="timer-config-row">
+          <span class="tcr-label">Minuten</span>
+          <input class="tcr-input" type="number" id="cdMins" value="${Math.round((timerTarget||25*60)/60)||25}" min="1" max="300"
+            onchange="document.getElementById('cdMins').dataset.changed='1'">
+        </div>
+        <div class="timer-config-row">
+          <span class="tcr-label">Schnellwahl</span>
+          <div class="tcr-presets">${presetsHTML}</div>
+        </div>
+      </div>`;
+
+  } else if (selMode === 'pomodoro') {
+    const cycles = [2,3,4,5,6];
+    area.innerHTML = `
+      <div class="timer-config">
+        <div class="timer-config-row">
+          <span class="tcr-label">Arbeitszeit</span>
+          <input class="tcr-input" type="number" id="pomoWork"  value="${pomoCycleLen}" min="1" max="90"> <span style="font-size:.75rem;color:var(--muted)">min</span>
+        </div>
+        <div class="timer-config-row">
+          <span class="tcr-label">Kurzpause</span>
+          <input class="tcr-input" type="number" id="pomoBreak" value="${pomoBreakLen}" min="1" max="30"> <span style="font-size:.75rem;color:var(--muted)">min</span>
+        </div>
+        <div class="timer-config-row">
+          <span class="tcr-label">Langpause</span>
+          <input class="tcr-input" type="number" id="pomoLong"  value="${pomoLongBreak}" min="1" max="60"> <span style="font-size:.75rem;color:var(--muted)">min</span>
+        </div>
+        <div class="timer-config-row">
+          <span class="tcr-label">Zyklen</span>
+          <div class="tcr-presets">${cycles.map(c=>`<button class="preset-btn ${pomoCycles===c?'active-preset':''}" onclick="setPomoCycles(${c})">${c}×</button>`).join('')}</div>
+        </div>
+        <div class="timer-config-row">
+          <span class="tcr-label">Fortschritt</span>
+          <div class="pomo-cycles" id="pomoCycleDisplay"></div>
+        </div>
+      </div>`;
+    renderPomoCycleDisplay();
+  }
+}
+
+function setCdPreset(mins) {
+  timerTarget = mins * 60;
+  if (document.getElementById('cdMins')) document.getElementById('cdMins').value = mins;
+  renderTimerConfig();
+}
+
+function setPomoCycles(n) {
+  pomoCycles = n;
+  if (timerRunning) timerStop(true);
+  pomoCurrentCycle = 0; pomoPhase = 'work';
+  renderTimerConfig();
+}
+
+function renderPomoCycleDisplay() {
+  const el = document.getElementById('pomoCycleDisplay');
+  if (!el) return;
+  let html = '';
+  for (let i = 0; i < pomoCycles; i++) {
+    const cls = i < pomoCurrentCycle ? 'done' : i === pomoCurrentCycle ? 'current' : '';
+    html += `<div class="pomo-dot ${cls}"></div>`;
+  }
+  html += `<span class="pomo-label">${pomoCurrentCycle}/${pomoCycles} abgeschlossen</span>`;
+  el.innerHTML = html;
+}
+
+function renderTimerControls() {
+  const ctrl = document.getElementById('timerControls');
+  if (!ctrl) return;
+  const isActive = timerFachId !== null;
+  const isRunning = timerRunning;
+
+  if (!isActive) {
+    // Not started yet
+    ctrl.innerHTML = `
+      <button class="tc-btn tc-btn-play" onclick="timerStart()">▶ Starten</button>`;
+  } else {
+    // Timer active
+    const playBtn = isRunning
+      ? `<button class="tc-btn tc-btn-pause" onclick="timerPlayPause()">⏸ Pause</button>`
+      : `<button class="tc-btn tc-btn-play" onclick="timerPlayPause()">▶ Weiter</button>`;
+    ctrl.innerHTML = `
+      ${playBtn}
+      <button class="tc-btn tc-btn-save"  onclick="timerSave()">✓ Speichern</button>
+      <button class="tc-btn tc-btn-stop"  onclick="timerStop(false)">■ Stop</button>`;
+  }
+}
+
+// ── TIMER LOGIC ──
+function timerStart() {
+  if (selFachId === null) { showToast('Bitte zuerst ein Fach wählen!'); return; }
+  if (timerRunning) { if (!confirm('Timer läuft bereits! Neu starten?')) return; timerStop(true); }
+
+  timerFachId  = selFachId;
+  timerMode    = selMode;
+  timerRunning = false;
+  timerSeconds = 0;
+
+  if (timerMode === 'countdown') {
+    const inp = document.getElementById('cdMins');
+    const mins = parseInt(inp ? inp.value : 25) || 25;
+    timerTarget  = mins * 60;
+    timerSeconds = timerTarget;
+  } else if (timerMode === 'pomodoro') {
+    const wInp = document.getElementById('pomoWork');
+    const bInp = document.getElementById('pomoBreak');
+    const lInp = document.getElementById('pomoLong');
+    pomoCycleLen  = parseInt(wInp  ? wInp.value  : pomoCycleLen)  || 25;
+    pomoBreakLen  = parseInt(bInp  ? bInp.value  : pomoBreakLen)  || 5;
+    pomoLongBreak = parseInt(lInp  ? lInp.value  : pomoLongBreak) || 15;
+    pomoCurrentCycle = 0; pomoPhase = 'work';
+    timerTarget  = pomoCycleLen * 60;
+    timerSeconds = timerTarget;
+  } else {
+    timerTarget  = 0;
+  }
+
+  // update mini widget
+  const f   = FAECHER[timerFachId];
+  const col = getCssVar(f.color);
+  document.getElementById('twDot').style.background = col;
+  document.getElementById('twName').textContent     = f.name;
+
+  timerPlayPause(); // auto-start
+}
+
+function timerPlayPause() {
+  if (timerFachId === null) { timerStart(); return; }
+  if (timerRunning) {
+    clearInterval(timerInterval);
+    timerRunning = false;
+  } else {
+    timerRunning = true;
+    timerInterval = setInterval(() => {
+      if (timerMode === 'stopwatch') {
+        timerSeconds++;
+      } else {
+        timerSeconds--;
+        if (timerSeconds <= 0) {
+          timerSeconds = 0;
+          updateTimerClockUI();
+          clearInterval(timerInterval);
+          timerRunning = false;
+          if (timerMode === 'pomodoro') {
+            handlePomoPhaseEnd();
+          } else {
+            showToast('⏰ Zeit abgelaufen!');
+            if (navigator.vibrate) navigator.vibrate([400,100,400]);
+          }
+          renderTimerControls();
+          return;
+        }
+      }
+      updateTimerClockUI();
+      updateMiniWidget();
+    }, 1000);
+  }
+  updateTimerClockUI();
+  updateMiniWidget();
+  renderTimerControls();
+}
+
+function handlePomoPhaseEnd() {
+  if (pomoPhase === 'work') {
+    // Save work time automatically
+    const mins = pomoCycleLen;
+    state[timerFachId] = (state[timerFachId]||0) + mins;
+    saveUserState(activeUser.id, state);
+    pomoCurrentCycle++;
+    if (pomoCurrentCycle >= pomoCycles) {
+      showToast(`🎉 Alle ${pomoCycles} Pomodoros geschafft! +${pomoCycles*pomoCycleLen} min gespeichert!`);
+      if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
+      timerStop(true);
+      renderDashboard();
+      renderTimerTab();
+      return;
+    }
+    // Start break
+    pomoPhase = pomoCurrentCycle % 4 === 0 ? 'longbreak' : 'break';
+    const breakMins = pomoPhase === 'longbreak' ? pomoLongBreak : pomoBreakLen;
+    timerTarget  = breakMins * 60;
+    timerSeconds = timerTarget;
+    showToast(`✓ Zyklus ${pomoCurrentCycle}/${pomoCycles} – Pause! ${breakMins} min`);
+    if (navigator.vibrate) navigator.vibrate([200,100,200]);
+    timerPlayPause(); // auto-start break
+  } else {
+    // Break over → start next work phase
+    pomoPhase    = 'work';
+    timerTarget  = pomoCycleLen * 60;
+    timerSeconds = timerTarget;
+    showToast(`▶ Weiter! Zyklus ${pomoCurrentCycle+1}/${pomoCycles} – Arbeitsphase`);
+    if (navigator.vibrate) navigator.vibrate([100,50,100]);
+    timerPlayPause(); // auto-start work
+  }
+  renderTimerTab();
+}
+
+function updateTimerClockUI() {
+  const bigTime = document.getElementById('timerBigTime');
+  const bigSub  = document.getElementById('timerBigSub');
+  const ring    = document.getElementById('ringProg');
+  const tw      = document.getElementById('twTime');
+  if (!bigTime) return;
+
+  const secs = timerSeconds;
+  const m = String(Math.floor(secs/60)).padStart(2,'0');
+  const s = String(secs%60).padStart(2,'0');
+  const display = m+':'+s;
+
+  bigTime.textContent = display;
+  if (tw) { tw.textContent = display; }
+
+  // color state
+  bigTime.className = 'timer-big-time';
+  if (tw) tw.className = 'tw-time';
+  if (timerRunning) {
+    if (timerMode === 'stopwatch') {
+      bigTime.classList.add('running');
+      if (tw) tw.classList.add('running');
+    } else if (secs <= 0) {
+      bigTime.classList.add('over'); if (tw) tw.classList.add('over');
+    } else if (secs <= 60) {
+      bigTime.classList.add('warn'); if (tw) tw.classList.add('warn');
+    } else {
+      bigTime.classList.add('running'); if (tw) tw.classList.add('running');
+    }
+  }
+
+  // ring progress
+  if (ring) {
+    const circ = 2 * Math.PI * 82; // ≈ 515
+    let pct = 0;
+    if (timerMode === 'stopwatch') {
+      pct = Math.min(1, secs / 3600); // fills over 1h
+    } else {
+      pct = timerTarget > 0 ? 1 - (secs / timerTarget) : 1;
+    }
+    const offset = circ * (1 - pct);
+    ring.style.strokeDasharray  = circ;
+    ring.style.strokeDashoffset = offset;
+    // color
+    const col = timerFachId !== null ? getCssVar(FAECHER[timerFachId].color) : 'var(--accent)';
+    ring.style.stroke = col;
+  }
+
+  // sub label
+  if (bigSub) {
+    if (timerMode === 'pomodoro') {
+      const phaseLabel = pomoPhase === 'work' ? '🍅 Arbeitsphase' : pomoPhase === 'longbreak' ? '☕ Lange Pause' : '🌿 Kurze Pause';
+      bigSub.textContent = `${phaseLabel} · Zyklus ${pomoCurrentCycle+1}/${pomoCycles}`;
+    } else if (timerMode === 'countdown') {
+      bigSub.textContent = timerRunning ? 'Countdown läuft…' : (secs === 0 ? '⏰ Zeit abgelaufen!' : 'Pausiert');
+    } else {
+      bigSub.textContent = timerRunning ? 'Stoppuhr läuft…' : (secs > 0 ? 'Pausiert' : '');
+    }
+  }
+
+  // update play btn
+  const twPP = document.getElementById('twBtnPP');
+  if (twPP) twPP.textContent = timerRunning ? '⏸' : '▶';
+
+  // mini widget mode label
+  const twMode = document.getElementById('twMode');
+  if (twMode) {
+    const labels = {stopwatch:'Stoppuhr', countdown:'Countdown', pomodoro:`Pomodoro ${pomoCurrentCycle+1}/${pomoCycles}`};
+    twMode.textContent = labels[timerMode] || '';
+  }
+}
+
+function updateMiniWidget() {
+  updateTimerClockUI(); // shared
+}
+
+function timerStop(silent) {
+  clearInterval(timerInterval);
+  timerRunning  = false;
+  timerSeconds  = 0;
+  timerTarget   = 0;
+  timerFachId   = null;
+  pomoCurrentCycle = 0; pomoPhase = 'work';
+  document.getElementById('timerWidget').classList.add('hidden');
+  if (!silent) {
+    renderTimerTab();
+    renderDashboard();
+  }
+}
+
+function timerSave() {
+  if (timerFachId === null) { showToast('Kein aktiver Timer!'); return; }
+  let elapsedSecs;
+  if (timerMode === 'countdown') elapsedSecs = timerTarget - timerSeconds;
+  else if (timerMode === 'stopwatch') elapsedSecs = timerSeconds;
+  else elapsedSecs = (pomoCycleLen * 60) - timerSeconds; // current pomo phase elapsed
+
+  const mins = Math.round(elapsedSecs / 60);
+  if (mins < 1) { showToast('Weniger als 1 Minute – nichts gespeichert.'); return; }
+
+  const fachId = timerFachId;
+  const before = state[fachId]||0;
+  state[fachId] = before + mins;
+  // record session log
+  const logKey = 'fl_log_' + activeUser.id;
+  let log = []; try { log = JSON.parse(localStorage.getItem(logKey)||'[]'); } catch {}
+  const today = new Date().toISOString().split('T')[0];
+  log.push({date: today, fachId, minutes: mins, ts: Date.now()});
+  localStorage.setItem(logKey, JSON.stringify(log));
+  updateStreak();
+  saveUserState(activeUser.id, state);
+  const fname = FAECHER[fachId].name;
+  timerStop(true);
+  checkAchievements(fachId, before, state[fachId]);
+  renderDashboard();
+  renderTimerTab();
+  showToast(`✓ ${mins} min → ${fname} gespeichert!`);
+}
+
+function timerHideWidget() {
+  document.getElementById('timerWidget').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+renderColorPicker();
+renderProfilePickList();
+</script>
+</body>
+</html>
